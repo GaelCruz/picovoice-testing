@@ -5,44 +5,34 @@ ACCESS_KEY = "oTgITbKOCV8fbVN+HA6trEDMUUVHYO1Q/MoVu39OTQsNfAMQfxWbHQ=="
 
 cheetah = pvcheetah.create(ACCESS_KEY)
 
-
 for index, name in enumerate(PvRecorder.get_available_devices()):
-  print('Device #%d: %s' % (index, name))
-
+    print('Device #%d: %s' % (index, name))
 
 try:
-  # Create a new PvRecorder instance
-  recorder = PvRecorder(frame_length=512, device_index=0)
-  
-  # Start the recorder
-  recorder.start()
-  
-  # Print instructions
-  print("Press Ctrl+C to stop the recorder")
-  print("Listening...")
-  
-  try:
-    # Get the current frame
-    frame = recorder.read()
-    
-    #listen/process frames
-    while True:
-      # Process the frame
-      partial_transcript, is_endpoint = cheetah.process(frame)
-      
-      #Print the partial transcript
-      print(partial_transcript, end='', flush=True)
-      
-      if is_endpoint:
-        final_transcript = cheetah.flush()
-        print(final_transcript)
-  finally:
-    print()
-    recorder.stop()
-except KeyboardInterrupt:
-  pass
-except CheetahActivationLimitError:
-  print("Activation limit exceeded. Please try again later.")
+    recorder = PvRecorder(frame_length=512, device_index=0)
+    recorder.start()
+    print("Press Ctrl+C to stop the recorder")
+    print("Listening...")
+
+    try:
+        while True:
+            frame = recorder.read()
+            partial_transcript, is_endpoint = cheetah.process(frame)
+            print(partial_transcript, end='', flush=True)
+            if is_endpoint:
+                final_transcript = cheetah.flush()
+                print(final_transcript)
+                # Print a new line to separate each endpoint
+                print("\n", end='', flush=True)
+    except KeyboardInterrupt:
+        print("Recording stopped by user")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        recorder.stop()
+except pvcheetah.CheetahActivationLimitError:
+    print("Activation limit exceeded. Please try again later.")
+except Exception as e:
+    print(f"An error occurred: {e}")
 finally:
-  print("Stopping the recorder...")
-  cheetah.delete
+    cheetah.delete()
