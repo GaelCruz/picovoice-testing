@@ -1,38 +1,39 @@
-import pvcheetah
+import pvcheetah 
+from pvcheetah import CheetahActivationLimitError
 from pvrecorder import PvRecorder
 
 ACCESS_KEY = "oTgITbKOCV8fbVN+HA6trEDMUUVHYO1Q/MoVu39OTQsNfAMQfxWbHQ=="
 
-cheetah = pvcheetah.create(ACCESS_KEY)
+cheetah = pvcheetah.create(ACCESS_KEY, endpoint_duration_sec=1.0)
 
 for index, name in enumerate(PvRecorder.get_available_devices()):
     print('Device #%d: %s' % (index, name))
 
 try:
-    recorder = PvRecorder(frame_length=512, device_index=0)
-    recorder.start()
-    print("Press Ctrl+C to stop the recorder")
-    print("Listening...")
+        print('Cheetah version : %s' % cheetah.version)
 
-    try:
-        while True:
-            frame = recorder.read()
-            partial_transcript, is_endpoint = cheetah.process(frame)
-            print(partial_transcript, end='', flush=True)
-            if is_endpoint:
-                final_transcript = cheetah.flush()
-                print(final_transcript)
-                # Print a new line to separate each endpoint
-                print("\n", end='', flush=True)
-    except KeyboardInterrupt:
-        print("Recording stopped by user")
-    except Exception as e:
-        print(f"An error occurred: {e}")
-    finally:
-        recorder.stop()
-except pvcheetah.CheetahActivationLimitError:
-    print("Activation limit exceeded. Please try again later.")
-except Exception as e:
-    print(f"An error occurred: {e}")
+        recorder = PvRecorder(frame_length=cheetah.frame_length, device_index=0)
+        recorder.start()
+        print('Listening... (press Ctrl+C to stop)')
+
+        try:
+            while True:
+                partial_transcript, is_endpoint = cheetah.process(recorder.read())
+                print(partial_transcript, end='', flush=True)
+                if is_endpoint:
+                    final_transcript=cheetah.flush()
+                    print(final_transcript)
+                    
+                    if(final_transcript.lower() == 'red light'):
+                        print("RED LIGHT DETECTED.")
+                    
+        finally:
+            print()
+            recorder.stop()
+
+except KeyboardInterrupt:
+        pass
+except CheetahActivationLimitError:
+        print('AccessKey has reached its processing limit.')
 finally:
-    cheetah.delete()
+        cheetah.delete()
